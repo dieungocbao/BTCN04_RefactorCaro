@@ -34,10 +34,9 @@ function Game({
 		)
 	})
 	if (!ascendingOrder) {
-		moves.sort((a, b) => {
-			return b.key - a.key
-		})
+		moves.reverse()
 	}
+
 	let status
 	if (winner) {
 		status = (

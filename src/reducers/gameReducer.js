@@ -39,10 +39,9 @@ const gameReducer = (state = initialState, action) => {
 			}
 		}
 		case TOGGLE_ORDER: {
-			const { ascendingOrder } = state
 			return {
 				...state,
-				ascendingOrder: !ascendingOrder
+				ascendingOrder: !state.ascendingOrder
 			}
 		}
 		case CLICK_PLAY: {
