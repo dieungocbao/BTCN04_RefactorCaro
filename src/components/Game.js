@@ -1,172 +1,117 @@
-import React, { Component } from 'react'
+import React from 'react'
 import { v4 } from 'uuid'
+import { connect } from 'react-redux'
 import Board from './Board'
-import calculateWinner from '../utils/helper'
+import { resetGame, jumpTo, toggleOrder, clickPlay } from '../actions'
 
-class Game extends Component {
-	constructor(props) {
-		super(props)
-		this.state = {
-			history: [
-				{
-					squares: Array(400).fill(null)
-				}
-			],
-			stepNumber: 0,
-			xIsNext: true,
-			ascendingOrder: true,
-			winner: null,
-			winPos: []
-		}
+function Game({
+	game: { history, winner, winPos, stepNumber, ascendingOrder, xIsNext },
+	resetGameA,
+	toggleOrderA,
+	jumpToA,
+	clickPlayA
+}) {
+	const handleClick = (i, row, col) => {
+		clickPlayA(i, row, col)
 	}
+	const current = history[stepNumber]
+	const moves = history.map((step, move) => {
+		let desc = 'Go to game start'
 
-	resetGame = () => {
-		this.setState({
-			history: [
-				{
-					squares: Array(400).fill(null)
-				}
-			],
-			stepNumber: 0,
-			xIsNext: true,
-			winner: null,
-			winPos: []
+		if (move) {
+			const row = step.clicked[0]
+			const col = step.clicked[1]
+			desc = `Go to move #${move}   ( ${row}, ${col})`
+		}
+
+		const bold = move === stepNumber ? 'btn btn-success' : 'btn btn-primary'
+		return (
+			<li key={v4()}>
+				<button type="button" className={bold} onClick={() => jumpToA(move)}>
+					{desc}
+				</button>
+			</li>
+		)
+	})
+	if (!ascendingOrder) {
+		moves.sort((a, b) => {
+			return b.key - a.key
 		})
 	}
-
-	handleClick(i, row, col) {
-		const { xIsNext, history, stepNumber } = this.state
-		const gameHistory = history.slice(0, stepNumber + 1)
-		const current = gameHistory[gameHistory.length - 1]
-		const squares = current.squares.slice()
-		if (!squares[i]) {
-			squares[i] = xIsNext ? 'X' : 'O'
-			this.setState({
-				history: gameHistory.concat([
-					{
-						squares,
-						clicked: [row, col]
-					}
-				]),
-				stepNumber: gameHistory.length,
-				xIsNext: !xIsNext
-			})
-			const pos = calculateWinner(squares, i)
-			if (pos) {
-				this.setState({
-					winner: squares[i],
-					winPos: [...pos]
-				})
-			}
-		}
+	let status
+	if (winner) {
+		status = (
+			<>
+				<div className="text-title">Winner :</div>
+				<div className="winner-text">{winner}</div>
+			</>
+		)
+	} else {
+		status = (
+			<>
+				<div className="text-title">Next Player :</div>
+				<div className="nextplayer-text">{xIsNext ? 'X' : 'O'}</div>
+			</>
+		)
 	}
 
-	jumpTo(step) {
-		this.setState({
-			stepNumber: step,
-			xIsNext: step % 2 === 0
-		})
-	}
+	return (
+		<div className="game">
+			<div className="game-board">
+				<Board
+					winPos={winPos}
+					winner={winner}
+					squares={current.squares}
+					onClick={(i, row, col) => handleClick(i, row, col)}
+				/>
+			</div>
+			<div className="game-info">
+				<div className="status">
+					<div>{status}</div>
 
-	toggleOrder() {
-		this.setState(prevState => ({
-			ascendingOrder: !prevState.ascendingOrder
-		}))
-	}
+					<div className="game-history">
+						<ol>{moves}</ol>
+					</div>
+				</div>
 
-	render() {
-		const {
-			history,
-			winner,
-			winPos,
-			stepNumber,
-			ascendingOrder,
-			xIsNext
-		} = this.state
-		const current = history[stepNumber]
-		const moves = history.map((step, move) => {
-			let desc = 'Go to game start'
-
-			if (move) {
-				const row = step.clicked[0]
-				const col = step.clicked[1]
-				desc = `Go to move #${move}   ( ${row}, ${col})`
-			}
-
-			const bold = move === stepNumber ? 'btn btn-success' : 'btn btn-primary'
-			return (
-				<li key={v4()}>
+				<div className="list-button">
 					<button
 						type="button"
-						className={bold}
-						onClick={() => this.jumpTo(move)}
+						className="btn btn-danger reset-btn"
+						onClick={() => resetGameA()}
 					>
-						{desc}
+						<i className="fa fa-history" />
+						Reset Game
 					</button>
-				</li>
-			)
-		})
-		if (!ascendingOrder) {
-			moves.sort((a, b) => {
-				return b.key - a.key
-			})
-		}
-		let status
-		if (winner) {
-			status = (
-				<>
-					<div className="text-title">Winner :</div>
-					<div className="winner-text">{winner}</div>
-				</>
-			)
-		} else {
-			status = (
-				<>
-					<div className="text-title">Next Player :</div>
-					<div className="nextplayer-text">{xIsNext ? 'X' : 'O'}</div>
-				</>
-			)
-		}
-		return (
-			<div className="game">
-				<div className="game-board">
-					<Board
-						winPos={winPos}
-						winner={winner}
-						squares={current.squares}
-						onClick={(i, row, col) => this.handleClick(i, row, col)}
-					/>
-				</div>
-				<div className="game-info">
-					<div className="status">
-						<div>{status}</div>
-
-						<div className="game-history">
-							<ol>{moves}</ol>
-						</div>
-					</div>
-
-					<div className="list-button">
-						<button
-							type="button"
-							className="btn btn-danger reset-btn"
-							onClick={this.resetGame}
-						>
-							<i className="fa fa-history" />
-							Reset Game
-						</button>
-						<button
-							type="button"
-							className="btn btn-primary order-button"
-							onClick={() => this.toggleOrder()}
-						>
-							<i className="fa fa-sort" /> Change order
-						</button>
-					</div>
+					<button
+						type="button"
+						className="btn btn-primary order-button"
+						onClick={() => toggleOrderA()}
+					>
+						<i className="fa fa-sort" /> Change order
+					</button>
 				</div>
 			</div>
-		)
+		</div>
+	)
+}
+
+const mapStateToProps = state => {
+	return {
+		game: state.gameReducer
 	}
 }
 
-export default Game
+const mapDispatchToProps = dispatch => {
+	return {
+		resetGameA: () => dispatch(resetGame()),
+		jumpToA: step => dispatch(jumpTo(step)),
+		toggleOrderA: () => dispatch(toggleOrder()),
+		clickPlayA: (i, row, col) => dispatch(clickPlay(i, row, col))
+	}
+}
+
+export default connect(
+	mapStateToProps,
+	mapDispatchToProps
+)(Game)
